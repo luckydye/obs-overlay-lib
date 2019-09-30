@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <!-- title is used in the title of the dock -->
+    <title>Timer</title>
+
+    <!-- import Material Icons icon font -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .material-icons {
+            font-size: 18px;
+        }
+    </style>
+
+    <!-- import optional overlay styles -->
+    <link href="../lib/obs-overlay.css" rel="stylesheet">
+
+    <!-- import ob-overlay lib -->
+    <script src="../dist/obs-overlay.js"></script>
+
+    <!-- define my custom dock -->
+    <script>
+        class TimerDock extends OBSOverlay.Dock {
+
+            setup() {
+                this.state = {
+                    playing: false,
+                    countdown: false,
+                    text: '00:00:00',
+                    time: 0,
+                };
+
+                let lastTick = Date.now();
+
+                const tick = () => {
+                    const currentTick = Date.now();
+                    const delta = currentTick - lastTick;
+
+                    if(this.state.playing) {
+                        if(this.state.countdown) {
+                            if(this.state.time - delta >= 0) {
+                                this.state.time -= delta;
+                            } else {
+                                this.state.time = 0;
+                                this.pause();
+                            }
+                        } else {
+                            this.state.time += delta;
+                        }
+
+                        this.update();
+                    }
+
+                    lastTick = currentTick;
+                }
+
+                setInterval(() => tick(), 100);
+            }
+
+            update() {
+                let s = Math.floor(this.state.time / 1000) % 60;
+                let m = Math.floor(this.state.time / 1000 / 60) % 60;
+                let h = Math.floor(this.state.time / 1000 / 60 / 60) % 60;
+
+                hours.value = h.toString().padStart(2, '0');
+                minutes.value = m.toString().padStart(2, '0');
+                seconds.value = s.toString().padStart(2, '0');
+
+                this.state.text = `${hours.value}:${minutes.value}:${seconds.value}`;
+
+                this.updateOverlay();
+            }
+
+            setTime() {
+                this.state.time = (seconds.value * 1000) + (minutes.value * 60 * 1000) + (hours.value * 60 * 60 * 1000);
+                this.update();
+            }
+
+            // component methods
+
+            reset() {
+                this.state.time = 0;
+                this.pause();
+                this.update();
+            }
+
+            pause() {
+                this.state.playing = false;
+                playButton.innerText = "play_arrow";
+            }
+
+            play() {
+                this.state.playing = true;
+                playButton.innerText = "pause";
+            }
+
+            togglePlay() {
+                if(this.state.playing) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            }
+
+            toggleCountdown() {
+                this.state.countdown = !this.state.countdown;
+                
+                if(this.state.countdown) {
+                    countdownButton.setAttribute('active', '');
+                } else {
+                    countdownButton.removeAttribute('active');
+                }
+            }
+
+        }
+
+        customElements.define('timer-dock', TimerDock);
+    </script>
+</head>
+<body>
+
+    <obs-overlay>
+        <div data-state="text">00:00:00</div>
+    </obs-overlay>
+
+    <timer-dock id="timer">
+        <div style="margin: 0 0 10px 0;" oninput="timer.setTime()">
+            <input id="hours" value="00" max="99" step="1">:
+            <input id="minutes" value="00" max="99" step="1">:
+            <input id="seconds" value="00" max="99" step="1">
+        </div>
+    
+        <div class="controls">
+            <button onclick="timer.reset()" class="material-icons">restore</button>
+            <button onclick="timer.togglePlay()" id="playButton" class="material-icons">play_arrow</button>
+            <button onclick="timer.toggleCountdown()" id="countdownButton" class="material-icons">timer</button>
+        </div>
+    </timer-dock>
+
+</body>
+</html>

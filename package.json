@@ -2,14 +2,22 @@
   "name": "obs-overlay-lib",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "obs-overlay.js",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:w": "parcel watch obs-overlay.js --no-cache",
+    "build": "parcel obs-overlay.js --no-cache"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "lit-html": "^1.1.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.6.2",
+    "parcel-bundler": "^1.12.3"
+  }
 }

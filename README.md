@@ -6,13 +6,17 @@ This library uses custom elements to render elements.
 
 ```javascript
 class CustomDock extends OBSOverlay.Dock {
+    
+    // define initial state
+    static get state() {
+        return {
+            text: 'default text',
+        };
+    }
 
     // setup() gets called in connectedCallback of the Dock class.
     setup() {
-        // initialize state
-        this.state = {
-            text: 'default text',
-        };
+        this.state.text = 'set up';
 
         // call to push updated state to overlay
         this.updateOverlay();

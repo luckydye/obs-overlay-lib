@@ -15,7 +15,7 @@
         }
     </style>
 
-    <!-- import optional overlay styles -->
+    <!-- import optional styles -->
     <link rel="stylesheet" href="../lib/obs-overlay.css">
 
     <!-- define my custom dock -->
@@ -25,14 +25,17 @@
 
         class TimerDock extends Dock {
 
-            setup() {
-                this.state = {
+            // define initial state
+            static get state() {
+                return {
                     playing: false,
                     countdown: false,
                     text: '00:00:00',
                     time: 0,
                 };
+            }
 
+            setup() {
                 let lastTick = Date.now();
 
                 const tick = () => {
@@ -58,6 +61,8 @@
                 }
 
                 setInterval(() => tick(), 100);
+
+                this.update();
             }
 
             update() {
@@ -71,30 +76,41 @@
 
                 this.state.text = `${hours.value}:${minutes.value}:${seconds.value}`;
 
+                if(this.state.playing) {
+                    playButton.innerText = "pause";
+                } else {
+                    playButton.innerText = "play_arrow";
+                }
+
+                if(this.state.countdown) {
+                    countdownButton.setAttribute('active', '');
+                } else {
+                    countdownButton.removeAttribute('active');
+                }
+
                 this.updateOverlay();
             }
+
+            // element methods
 
             setTime() {
                 this.state.time = (seconds.value * 1000) + (minutes.value * 60 * 1000) + (hours.value * 60 * 60 * 1000);
                 this.update();
             }
 
-            // component methods
-
             reset() {
                 this.state.time = 0;
                 this.pause();
-                this.update();
             }
 
             pause() {
                 this.state.playing = false;
-                playButton.innerText = "play_arrow";
+                this.update();
             }
 
             play() {
                 this.state.playing = true;
-                playButton.innerText = "pause";
+                this.update();
             }
 
             togglePlay() {
@@ -107,12 +123,7 @@
 
             toggleCountdown() {
                 this.state.countdown = !this.state.countdown;
-                
-                if(this.state.countdown) {
-                    countdownButton.setAttribute('active', '');
-                } else {
-                    countdownButton.removeAttribute('active');
-                }
+                this.update();
             }
 
         }

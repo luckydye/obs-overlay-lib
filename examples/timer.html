@@ -11,18 +11,19 @@
     <style>
         .material-icons {
             font-size: 18px;
+            width: 35px;
         }
     </style>
 
     <!-- import optional overlay styles -->
-    <link href="../lib/obs-overlay.css" rel="stylesheet">
-
-    <!-- import ob-overlay lib -->
-    <script src="../dist/obs-overlay.js"></script>
+    <link rel="stylesheet" href="../lib/obs-overlay.css">
 
     <!-- define my custom dock -->
-    <script>
-        class TimerDock extends OBSOverlay.Dock {
+    <script type="module">
+        // import ob-overlay lib
+        import { Dock } from '../lib/obs-overlay.js';
+
+        class TimerDock extends Dock {
 
             setup() {
                 this.state = {
@@ -127,9 +128,9 @@
 
     <timer-dock id="timer">
         <div style="margin: 0 0 10px 0;" oninput="timer.setTime()">
-            <input id="hours" value="00" max="99" step="1">:
-            <input id="minutes" value="00" max="99" step="1">:
-            <input id="seconds" value="00" max="99" step="1">
+            <input type="number" id="hours" value="00" max="99" step="1">:
+            <input type="number" id="minutes" value="00" max="99" step="1">:
+            <input type="number" id="seconds" value="00" max="99" step="1">
         </div>
     
         <div class="controls">

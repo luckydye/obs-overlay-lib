@@ -6,7 +6,8 @@
     <!-- title is used in the title of the dock -->
     <title>Timer</title>
 
-    <!-- import Material Icons icon font -->
+    <!-- import fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         .material-icons {
@@ -73,6 +74,7 @@
                 hours.value = h.toString().padStart(2, '0');
                 minutes.value = m.toString().padStart(2, '0');
                 seconds.value = s.toString().padStart(2, '0');
+                title.value = this.state.title;
 
                 this.state.text = `${hours.value}:${minutes.value}:${seconds.value}`;
 
@@ -92,6 +94,11 @@
             }
 
             // element methods
+
+            setTitle() {
+                this.state.title = title.value;
+                this.update();
+            }
 
             setTime() {
                 this.state.time = (seconds.value * 1000) + (minutes.value * 60 * 1000) + (hours.value * 60 * 60 * 1000);
@@ -134,14 +141,50 @@
 <body>
 
     <obs-overlay>
-        <div data-state="text">00:00:00</div>
+        <style>
+            obs-overlay {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+            .title {
+                font-family: Roboto;
+                font-size: 40px;
+                font-weight: bold;
+                letter-spacing: 4px;
+                line-height: 100%;
+                margin-bottom: 15px;
+                text-transform: uppercase;
+            }
+            .time {
+                font-family: Roboto;
+                font-size: 95px;
+                font-weight: 300;
+                line-height: 100%;
+                width: 100%;
+                text-align: center;
+            }
+            .clock {
+                padding: 25px 75px;
+                background: hsla(0, 0%, 5%, 0.9);
+                position: relative;
+            }
+        </style>
+        <div class="clock">
+            <div class="title" data-state="title"></div>
+            <div class="time" data-state="text"></div>
+        </div>
     </obs-overlay>
 
     <timer-dock id="timer">
+        <div style="margin: 0 0 10px 0;" oninput="timer.setTitle()">
+            <input type="text" id="title" placeholder="Title"/>
+        </div>
+
         <div style="margin: 0 0 10px 0;" oninput="timer.setTime()">
-            <input type="number" id="hours" value="00" max="99" step="1">:
-            <input type="number" id="minutes" value="00" max="99" step="1">:
-            <input type="number" id="seconds" value="00" max="99" step="1">
+            <input type="number" id="hours" value="00" max="99" step="1"/>:
+            <input type="number" id="minutes" value="00" max="99" step="1"/>:
+            <input type="number" id="seconds" value="00" max="99" step="1"/>
         </div>
     
         <div class="controls">

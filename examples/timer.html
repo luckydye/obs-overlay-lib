@@ -41,9 +41,10 @@
 
                 const tick = () => {
                     const currentTick = Date.now();
-                    const delta = currentTick - lastTick;
 
                     if(this.state.playing) {
+                        const delta = currentTick - lastTick;
+
                         if(this.state.countdown) {
                             if(this.state.time - delta >= 0) {
                                 this.state.time -= delta;

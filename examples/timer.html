@@ -9,19 +9,86 @@
     <!-- import fonts -->
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
     <style>
-        .material-icons {
-            font-size: 18px;
-            width: 35px;
+        body {
+            background: rgba(0, 0, 0, 0);
+            color: white;
+            font-family: sans-serif;
+            font-size: 22px;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
+
+        body:not([loaded]) {
+            visibility: hidden;
         }
     </style>
+</head>
+<body>
 
-    <!-- import optional styles -->
-    <link rel="stylesheet" href="../lib/obs-overlay.css">
+    <obs-overlay>
+        <style>
+            obs-overlay {
+                font-family: Roboto;
+                background: hsla(0, 0%, 5%, 0.9);
+            }
+            obs-overlay[playing=false] {
+                background: hsla(0, 0%, 37%, 0.9);
+            }
+            obs-overlay[playing="false"][countdown="true"][time="0"] {
+                background: rgba(66, 131, 60, 0.9);
+            }
+            .title {
+                font-size: 40px;
+                font-weight: bold;
+                letter-spacing: 4px;
+                text-transform: uppercase;
+                line-height: 80%;
+                text-align: center;
+            }
+            .time {
+                font-size: 95px;
+                font-weight: 300;
+                width: 100%;
+                line-height: 80%;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .time .spacer {
+                margin: 0 2px;
+                margin-top: -10px;
+            }
+            .clock {
+                position: relative;
+                text-align: center;
+                padding: 20px 30px;
+                display: grid;
+                grid-gap: 15px;
+                grid-template-rows: auto auto;
+            }
+        </style>
+        <div class="clock">
+            <div class="title" data-html="title"></div>
+            <div class="time">
+                <span data-html="hours"></span>
+                <span class="spacer">:</span>
+                <span data-html="minutes"></span>
+                <span class="spacer">:</span>
+                <span data-html="seconds"></span>
+            </div>
+        </div>
+    </obs-overlay>
+
+    <timer-dock></timer-dock>
 
     <!-- define my custom dock -->
     <script type="module">
         // import ob-overlay lib
+        import { html } from 'https://unpkg.com/lit-html?module';
         import { Dock } from '../lib/obs-overlay.js';
 
         class TimerDock extends Dock {
@@ -31,9 +98,48 @@
                 return {
                     playing: false,
                     countdown: false,
-                    text: '00:00:00',
+                    minutes: 0,
+                    seconds: 0,
+                    hours: 0,
                     time: 0,
                 };
+            }
+
+            static template(timer) {
+                return html`
+                    <div @input=${() => timer.update()}>
+                        <input type="text" .value="${timer.state.title}" @input=${e => timer.state.title = e.target.value} placeholder="Title"/>
+                    </div>
+
+                    <div @input=${() => timer.setTime()}>
+                        <input type="number" .value="${timer.state.hours}" @input=${e => timer.state.hours = e.target.value} max="99" step="1"/>
+                        <span>:</span>
+                        <input type="number" .value="${timer.state.minutes}" @input=${e => timer.state.minutes = e.target.value} max="99" step="1"/>
+                        <span>:</span>
+                        <input type="number" .value="${timer.state.seconds}" @input=${e => timer.state.seconds = e.target.value} max="99" step="1"/>
+                    </div>
+                
+                    <div class="controls">
+                        <style>
+                            :host([countdown="true"]) .countdown {
+                                background: #555555;
+                            }
+                            :host([playing="true"]) .playpause::after {
+                                content: "pause";
+                            }
+                            :host([playing="false"]) .playpause::after {
+                                content: "play_arrow";
+                            }
+                            :host([playing="true"]) .playpause {
+                                background: #555555;
+                            }
+                        </style>
+
+                        <button @click=${() => timer.reset()} class="material-icons">restore</button>
+                        <button @click=${() => timer.togglePlay()} class="material-icons playpause"></button>
+                        <button @click=${() => timer.toggleCountdown()} class="material-icons countdown">timer</button>
+                    </div>
+                `;
             }
 
             setup() {
@@ -72,37 +178,17 @@
                 let m = Math.floor(this.state.time / 1000 / 60) % 60;
                 let h = Math.floor(this.state.time / 1000 / 60 / 60) % 60;
 
-                hours.value = h.toString().padStart(2, '0');
-                minutes.value = m.toString().padStart(2, '0');
-                seconds.value = s.toString().padStart(2, '0');
-                title.value = this.state.title;
-
-                this.state.text = `${hours.value}:${minutes.value}:${seconds.value}`;
-
-                if(this.state.playing) {
-                    playButton.innerText = "pause";
-                } else {
-                    playButton.innerText = "play_arrow";
-                }
-
-                if(this.state.countdown) {
-                    countdownButton.setAttribute('active', '');
-                } else {
-                    countdownButton.removeAttribute('active');
-                }
+                this.state.hours = h.toString().padStart(2, '0');
+                this.state.minutes = m.toString().padStart(2, '0');
+                this.state.seconds = s.toString().padStart(2, '0');
 
                 this.updateOverlay();
             }
 
             // element methods
 
-            setTitle() {
-                this.state.title = title.value;
-                this.update();
-            }
-
             setTime() {
-                this.state.time = (seconds.value * 1000) + (minutes.value * 60 * 1000) + (hours.value * 60 * 60 * 1000);
+                this.state.time = (+this.state.seconds * 1000) + (+this.state.minutes * 60 * 1000) + (+this.state.hours * 60 * 60 * 1000);
                 this.update();
             }
 
@@ -138,65 +224,5 @@
 
         customElements.define('timer-dock', TimerDock);
     </script>
-</head>
-<body>
-
-    <obs-overlay>
-        <style>
-            obs-overlay {
-                position: absolute;
-                left: 0;
-                top: 0;
-                text-align: center;
-            }
-            .title {
-                font-family: Roboto;
-                font-size: 40px;
-                font-weight: bold;
-                letter-spacing: 4px;
-                line-height: 100%;
-                margin-bottom: 15px;
-                text-transform: uppercase;
-            }
-            .time {
-                font-family: Roboto;
-                font-size: 95px;
-                font-weight: 300;
-                line-height: 100%;
-                width: 100%;
-            }
-            .clock {
-                padding: 30px 40px;
-                background: hsla(0, 0%, 5%, 0.9);
-                position: relative;
-            }
-            input {
-                max-width: 145px;
-            }
-        </style>
-        <div class="clock">
-            <div class="title" data-state="title"></div>
-            <div class="time" data-state="text"></div>
-        </div>
-    </obs-overlay>
-
-    <timer-dock id="timer">
-        <div style="margin: 0 0 10px 0;" oninput="timer.setTitle()">
-            <input type="text" id="title" placeholder="Title"/>
-        </div>
-
-        <div style="margin: 0 0 10px 0;" oninput="timer.setTime()">
-            <input type="number" id="hours" value="00" max="99" step="1"/>:
-            <input type="number" id="minutes" value="00" max="99" step="1"/>:
-            <input type="number" id="seconds" value="00" max="99" step="1"/>
-        </div>
-    
-        <div class="controls">
-            <button onclick="timer.reset()" class="material-icons">restore</button>
-            <button onclick="timer.togglePlay()" id="playButton" class="material-icons">play_arrow</button>
-            <button onclick="timer.toggleCountdown()" id="countdownButton" class="material-icons">timer</button>
-        </div>
-    </timer-dock>
-
 </body>
 </html>

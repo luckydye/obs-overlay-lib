@@ -12,7 +12,7 @@
 
     <style>
         body {
-            background: rgba(0, 0, 0, 0);
+            background: rgba(0,0,0,0);
             color: white;
             font-family: sans-serif;
             font-size: 22px;
@@ -20,19 +20,20 @@
             margin: 0;
             user-select: none;
         }
-
-        body:not([loaded]) {
-            visibility: hidden;
-        }
     </style>
 </head>
 <body>
 
-    <obs-overlay>
+    <timer-dock overlay="timer"></timer-dock>
+
+    <obs-overlay overlay="timer">
         <style>
             obs-overlay {
                 font-family: Roboto;
                 background: hsla(0, 0%, 5%, 0.9);
+            }
+            obs-overlay:not([time]) {
+                display: none;
             }
             obs-overlay[playing=false] {
                 background: hsla(0, 0%, 37%, 0.9);
@@ -43,12 +44,14 @@
             .title {
                 font-size: 40px;
                 font-weight: bold;
-                letter-spacing: 4px;
+                letter-spacing: 5px;
                 text-transform: uppercase;
                 line-height: 80%;
                 text-align: center;
+                margin: 10px 0;
             }
             .time {
+                margin: 10px 0;
                 font-size: 95px;
                 font-weight: 300;
                 width: 100%;
@@ -65,10 +68,9 @@
             .clock {
                 position: relative;
                 text-align: center;
-                padding: 20px 30px;
-                display: grid;
-                grid-gap: 15px;
-                grid-template-rows: auto auto;
+                padding: 10px 20px;
+                display: flex;
+                flex-direction: column-reverse;
             }
         </style>
         <div class="clock">
@@ -83,41 +85,113 @@
         </div>
     </obs-overlay>
 
-    <timer-dock></timer-dock>
-
     <!-- define my custom dock -->
     <script type="module">
         // import ob-overlay lib
         import { html } from 'https://unpkg.com/lit-html?module';
-        import { Dock } from '../lib/obs-overlay.js';
+        import { Overlay, DockElement } from '../lib/obs-overlay.js';
 
-        class TimerDock extends Dock {
+        class Timer extends Overlay {
 
-            // define initial state
             static get state() {
                 return {
+                    time: 0,
+                    title: "",
+                    hours: "00",
+                    minutes: "00",
+                    seconds: "00",
                     playing: false,
                     countdown: false,
-                    minutes: 0,
-                    seconds: 0,
-                    hours: 0,
-                    time: 0,
-                };
+                }
             }
 
-            static template(timer) {
+            update(state, delta) {
+                if(state.playing) {
+                    if(state.countdown) {
+                        if(state.time > 1) {
+                            state.time -= delta;
+                        } else {
+                            state.time = 0;
+                            this.pause();
+                        }
+                    } else {
+                        state.time += delta;
+                    }
+                }
+
+                const s = Math.floor(state.time / 1000) % 60;
+                const m = Math.floor(state.time / 1000 / 60) % 60;
+                const h = Math.floor(state.time / 1000 / 60 / 60) % 60;
+
+                state.hours = h.toString().padStart(2, '0');
+                state.minutes = m.toString().padStart(2, '0');
+                state.seconds = s.toString().padStart(2, '0');
+            }
+
+            setTitle(title) {
+                this.postState({ title });
+            }
+
+            setTime(h, m, s) {
+                this.postState({
+                    time: (parseInt(s) * 1000) + (parseInt(m) * 60 * 1000) + (parseInt(h) * 60 * 60 * 1000)
+                });
+            }
+
+            pause() {
+                this.postState({ playing: false });
+            }
+
+            play() {
+                this.postState({ playing: true });
+            }
+
+            togglePlay() {
+                if(this.state.playing) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            }
+
+            toggleCountdown() {
+                this.postState({ countdown: !this.state.countdown });
+            }
+
+            reset() {
+                this.postState({ time: 0 });
+            }
+
+        }
+
+        class TimerDock extends DockElement {
+
+            static template(dock) {
+                const overlay = dock.overlay;
+                const state = overlay.getState();
+
+                const serializeTimeForm = (form) => {
+                    const formData = new FormData(form);
+                    
+                    const h = +formData.get('hours');
+                    const m = +formData.get('minutes');
+                    const s = +formData.get('seconds');
+
+                    overlay.setTime(h, m, s);
+                }
+
                 return html`
-                    <div @input=${() => timer.update()}>
-                        <input type="text" .value="${timer.state.title}" @input=${e => timer.state.title = e.target.value} placeholder="Title"/>
+                    <div>
+                        <input type="text" value="${state.title}" @input=${e => overlay.setTitle(e.target.value)} placeholder="Title"/>
                     </div>
 
-                    <div @input=${() => timer.setTime()}>
-                        <input type="number" .value="${timer.state.hours}" @input=${e => timer.state.hours = e.target.value} max="99" step="1"/>
+                    <form @input=${(function() { serializeTimeForm(this); })}>
+                        <input type="number" .value="${state.hours}" name="hours" max="99" step="1"/>
                         <span>:</span>
-                        <input type="number" .value="${timer.state.minutes}" @input=${e => timer.state.minutes = e.target.value} max="99" step="1"/>
+                        <input type="number" .value="${state.minutes}" name="minutes" max="99" step="1"/>
                         <span>:</span>
-                        <input type="number" .value="${timer.state.seconds}" @input=${e => timer.state.seconds = e.target.value} max="99" step="1"/>
-                    </div>
+                        <input type="number" .value="${state.seconds}" name="seconds" max="99" step="1"/>
+                    </form>
                 
                     <div class="controls">
                         <style>
@@ -135,94 +209,19 @@
                             }
                         </style>
 
-                        <button @click=${() => timer.reset()} class="material-icons">restore</button>
-                        <button @click=${() => timer.togglePlay()} class="material-icons playpause"></button>
-                        <button @click=${() => timer.toggleCountdown()} class="material-icons countdown">timer</button>
+                        <button @click=${() => overlay.reset()} class="material-icons">restore</button>
+                        <button @click=${() => overlay.togglePlay()} class="material-icons playpause"></button>
+                        <button @click=${() => overlay.toggleCountdown()} class="material-icons countdown">timer</button>
                     </div>
                 `;
-            }
-
-            setup() {
-                let lastTick = Date.now();
-
-                const tick = () => {
-                    const currentTick = Date.now();
-
-                    if(this.state.playing) {
-                        const delta = currentTick - lastTick;
-
-                        if(this.state.countdown) {
-                            if(this.state.time - delta >= 0) {
-                                this.state.time -= delta;
-                            } else {
-                                this.state.time = 0;
-                                this.pause();
-                            }
-                        } else {
-                            this.state.time += delta;
-                        }
-
-                        this.update();
-                    }
-
-                    lastTick = currentTick;
-                }
-
-                setInterval(() => tick(), 100);
-
-                this.update();
-            }
-
-            update() {
-                let s = Math.floor(this.state.time / 1000) % 60;
-                let m = Math.floor(this.state.time / 1000 / 60) % 60;
-                let h = Math.floor(this.state.time / 1000 / 60 / 60) % 60;
-
-                this.state.hours = h.toString().padStart(2, '0');
-                this.state.minutes = m.toString().padStart(2, '0');
-                this.state.seconds = s.toString().padStart(2, '0');
-
-                this.updateOverlay();
-            }
-
-            // element methods
-
-            setTime() {
-                this.state.time = (+this.state.seconds * 1000) + (+this.state.minutes * 60 * 1000) + (+this.state.hours * 60 * 60 * 1000);
-                this.update();
-            }
-
-            reset() {
-                this.state.time = 0;
-                this.pause();
-            }
-
-            pause() {
-                this.state.playing = false;
-                this.update();
-            }
-
-            play() {
-                this.state.playing = true;
-                this.update();
-            }
-
-            togglePlay() {
-                if(this.state.playing) {
-                    this.pause();
-                } else {
-                    this.play();
-                }
-            }
-
-            toggleCountdown() {
-                this.state.countdown = !this.state.countdown;
-                this.update();
             }
 
         }
 
         customElements.define('timer-dock', TimerDock);
+
+        const timer = new Timer('timer');
+
     </script>
 </body>
 </html>

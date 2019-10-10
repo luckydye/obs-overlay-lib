@@ -3,6 +3,7 @@
 ## Example
 
 - [Timer example](./examples/timer.html)
+  (Use this URL inside OBS: https://luckydye.github.io/obs-overlay-lib/examples/timer.html)
 
 ## How to use
 

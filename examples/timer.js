@@ -118,10 +118,15 @@ class TimerDock extends DockElement {
                     :host([playing="true"]) .playpause {
                         background: #555555;
                     }
+                    [obsdragndrop] {
+                        text-decoration: none;
+                    }
                 </style>
 
                 <button @click=${() => overlay.reset()} class="material-icons">restore</button>
-                <button @click=${() => overlay.togglePlay()} class="material-icons playpause"></button>
+                <a obsdragndrop @click="${e => e.preventDefault()}" href="${location.origin}${location.pathname}?layer-width=400&layer-height=180&layer-name=Timer">
+                    <button @click=${() => overlay.togglePlay()} class="material-icons playpause"></button>
+                </a>
                 <button @click=${() => overlay.toggleCountdown()} class="material-icons countdown">timer</button>
             </div>
         `;
